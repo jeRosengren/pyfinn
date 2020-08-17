@@ -24,7 +24,7 @@ def _clean(text):
 
 def _parse_data_lists(html):
     data = {}
-    days = ['Man.', 'Tir.', 'Ons.', 'Tors.', 'Fre', 'Lør.', 'Søn.']
+    days = ['Man.', 'Tir.', 'Ons.', 'Tor.', 'Fre', 'Lør.', 'Søn.']
     skip_keys = ['Mobil', 'Fax', '', ] + days  # Unhandled data list labels
 
     data_lists = html.find('dl')
@@ -61,6 +61,7 @@ def _calc_price(ad_data):
 def scrape_ad(finnkode):
     url = 'https://www.finn.no/realestate/homes/ad.html?finnkode={code}'.format(code=finnkode)
     r = session.get(url, headers={'user-agent': ua.random})
+    r.encoding = "utf-8"
 
     r.raise_for_status()
 
