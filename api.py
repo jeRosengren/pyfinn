@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from finn import scrape_ad
 
 app = Flask(__name__)
+app.config['JSON_AS_ASCII'] = False
 
 redis_service = redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
 cache_duration = int(os.getenv('CACHE_DURATION_SECONDS', 23 * 60 * 60))
