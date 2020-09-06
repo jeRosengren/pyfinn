@@ -1,6 +1,6 @@
 {
   "name": "pyfinn",
-  "repository": "https://github.com/nikolaik/pyfinn",
+  "repository": "https://github.com/jeRosengren/pyfinn",
   "env": {},
   "addons": [
     "heroku-redis:hobby-dev"
