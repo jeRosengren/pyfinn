@@ -1,6 +1,7 @@
 import json
 import re
 import sys
+import requests
 from datetime import datetime
 from urllib import parse
 
@@ -58,6 +59,23 @@ def _calc_price(ad_data):
     return ad_data['Totalpris'] - debt - cost
 
 
+def _scrape_about_nabolaget(finnkode):
+    data = {}
+    url = 'https://www.finn.no/realestate/neighborhood-api.json?finnkode={code}'.format(code=finnkode)
+
+    r = requests.get(url)
+    r.raise_for_status()
+
+    data_json = r.json()
+    walking_distances = data_json['cards'][0]['data']['pois']
+
+    for wd in walking_distances:
+        if (wd['distanceType'] == 'walk'):
+            data[wd['name']] = wd['distance']
+
+    return data
+
+
 def scrape_ad(finnkode):
     url = 'https://www.finn.no/realestate/homes/ad.html?finnkode={code}'.format(code=finnkode)
     r = session.get(url, headers={'user-agent': ua.random})
@@ -73,8 +91,15 @@ def scrape_ad(finnkode):
 
     ad_data = {
         'Postadresse': postal_address_element.text,
-        'url': url,
+        'URL': url,
     }
+
+    CSS_SELECTOR_AREA = 'body > main > div > div.grid > div.grid__unit.u-r-size2of3 > div > section:nth-child(3) > span'
+    area_element = html.find(CSS_SELECTOR_AREA, first=True)
+    if area_element:
+        ad_data['Område'] = area_element.text
+
+    ad_data.update(_scrape_about_nabolaget(finnkode))
 
     viewings = _scrape_viewings(html)
     if viewings:
