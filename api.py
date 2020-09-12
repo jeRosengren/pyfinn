@@ -7,9 +7,10 @@ from flask import Flask, request, jsonify
 from finn import scrape_ad
 
 app = Flask(__name__)
+app.config['JSON_AS_ASCII'] = False
 
-redis_service = redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
-cache_duration = int(os.getenv('CACHE_DURATION_SECONDS', 23 * 60 * 60))
+# redis_service = redis.from_url(os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
+# cache_duration = int(os.getenv('CACHE_DURATION_SECONDS', 23 * 60 * 60))
 
 
 @app.route('/', methods=['GET'])
@@ -18,14 +19,15 @@ def ad_detail():
     if not finnkode or not finnkode.isdigit():
         return jsonify(**{'error': 'Missing or invalid param finnkode. Try /?finnkode=KODE'})
 
-    cache_key = f'finn-ad:{finnkode}'
-    ad = redis_service.get(cache_key)
-    if not ad:
-        ad = scrape_ad(finnkode)
-        redis_service.set(cache_key, json.dumps(ad), cache_duration)
-    else:
-        ad = json.loads(ad)
+    # cache_key = f'finn-ad:{finnkode}'
+    # ad = redis_service.get(cache_key)
+    # if not ad:
+    #     ad = scrape_ad(finnkode)
+    #     redis_service.set(cache_key, json.dumps(ad), cache_duration)
+    # else:
+    #     ad = json.loads(ad)
 
+    ad = scrape_ad(finnkode)
     return jsonify(ad=ad)
 
 
