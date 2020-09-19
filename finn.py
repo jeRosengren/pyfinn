@@ -39,18 +39,18 @@ def _find_travel_times(address):
 
     try:
         for dest in destinations:
-            directions_result_transmit = gmaps.directions(origin=address,
+            directions_result_transit = gmaps.directions(origin=address,
                                                  destination=dest,
                                                  mode="transit",
                                                  arrival_time=latest_arrival_time, alternatives=True)
 
             travel_times_transit[dest] = {}
-            travel_times_transit[dest]['Reisetid'] = directions_result_transmit[0]['legs'][0]['duration']['text']
-            travel_times_transit[dest]['Avstand'] = directions_result_transmit[0]['legs'][0]['distance']['text']
+            travel_times_transit[dest]['Reisetid'] = directions_result_transit[0]['legs'][0]['duration']['text']
+            travel_times_transit[dest]['Avstand'] = directions_result_transit[0]['legs'][0]['distance']['text']
 
-            departure_time = directions_result_transmit[0]['legs'][0]['departure_time']['value']
+            departure_time = directions_result_transit[0]['legs'][0]['departure_time']['value']
             travel_times_transit[dest]['Avgang'] = datetime.fromtimestamp(departure_time).isoformat()
-            arrival_time = directions_result_transmit[0]['legs'][0]['arrival_time']['value']
+            arrival_time = directions_result_transit[0]['legs'][0]['arrival_time']['value']
             travel_times_transit[dest]['Ankomst'] = datetime.fromtimestamp(arrival_time).isoformat()
 
             directions_result_driving = gmaps.directions(origin=address,
@@ -61,6 +61,10 @@ def _find_travel_times(address):
             travel_times_driving[dest] = {}
             travel_times_driving[dest]['Reisetid'] = directions_result_driving[0]['legs'][0]['duration']['text']
             travel_times_driving[dest]['Avstand'] = directions_result_driving[0]['legs'][0]['distance']['text']
+
+            data[dest] = {}
+            data[dest]['Kollektivt'] = "{:.0f} min".format(directions_result_transit[0]['legs'][0]['duration']['value'] / 60)
+            data[dest]['Bil'] = "{:.0f} min".format(directions_result_driving[0]['legs'][0]['duration']['value'] / 60)
 
     except googlemaps.exceptions.ApiError:
         print("Error in getting travel time")
