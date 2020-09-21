@@ -2,12 +2,16 @@ import json
 import re
 import sys
 import requests
+import googlemaps
+import os
 from datetime import datetime
 from urllib import parse
 
 from fake_useragent import UserAgent
 from requests_html import HTMLSession
 
+# Write inn your API key here
+gmaps = googlemaps.Client(key=os.environ['GOOGLE_API_KEY'])
 
 session = HTMLSession()
 ua = UserAgent()
@@ -21,6 +25,57 @@ def _clean(text):
         pass
 
     return text
+
+
+def _find_travel_times(address):
+    data = {}
+    travel_times_transit = {}
+    travel_times_driving = {}
+    destinations = ['Oslo Sentralstasjon', 'Accenture, Fornebu', 'Den Franske Skolen',
+                    'Rosenvilde VGS']
+
+    now = datetime.now()
+    latest_arrival_time = datetime.fromisoformat('2020-09-16 08:00+02:00')
+
+    try:
+        for dest in destinations:
+            directions_result_transit = gmaps.directions(origin=address,
+                                                 destination=dest,
+                                                 mode="transit",
+                                                 arrival_time=latest_arrival_time, alternatives=True)
+
+            travel_times_transit[dest] = {}
+            travel_times_transit[dest]['Reisetid'] = directions_result_transit[0]['legs'][0]['duration']['text']
+            travel_times_transit[dest]['Avstand'] = directions_result_transit[0]['legs'][0]['distance']['text']
+
+            departure_time = directions_result_transit[0]['legs'][0]['departure_time']['value']
+            travel_times_transit[dest]['Avgang'] = datetime.fromtimestamp(departure_time).isoformat()
+            arrival_time = directions_result_transit[0]['legs'][0]['arrival_time']['value']
+            travel_times_transit[dest]['Ankomst'] = datetime.fromtimestamp(arrival_time).isoformat()
+
+            directions_result_driving = gmaps.directions(origin=address,
+                                                 destination=dest,
+                                                 mode="driving",
+                                                 arrival_time=latest_arrival_time)
+
+            travel_times_driving[dest] = {}
+            travel_times_driving[dest]['Reisetid'] = directions_result_driving[0]['legs'][0]['duration']['text']
+            travel_times_driving[dest]['Avstand'] = directions_result_driving[0]['legs'][0]['distance']['text']
+
+            data[dest] = {}
+            data[dest]['Kollektivt'] = "{:.0f} min".format(directions_result_transit[0]['legs'][0]['duration']['value'] / 60)
+            data[dest]['Bil'] = "{:.0f} min".format(directions_result_driving[0]['legs'][0]['duration']['value'] / 60)
+
+    except googlemaps.exceptions.ApiError:
+        print("Error in getting travel time")
+
+    data['Reisetider (kollektivt)'] = travel_times_transit
+    print('Successfully added TRANSIT travel times for ' + address)
+
+    data['Reisetider (bil)'] = travel_times_driving
+    print('Successfully added DRIVING travel times for ' + address)
+
+    return data
 
 
 def _parse_data_lists(html):
@@ -69,9 +124,11 @@ def _scrape_about_nabolaget(finnkode):
     data_json = r.json()
     walking_distances = data_json['cards'][0]['data']['pois']
 
+    data['Gåavstander'] = {}
+
     for wd in walking_distances:
         if (wd['distanceType'] == 'walk'):
-            data[wd['name']] = wd['distance']
+            data['Gåavstander'][wd['name']] = wd['distance']
 
     return data
 
@@ -100,6 +157,7 @@ def scrape_ad(finnkode):
         ad_data['Område'] = area_element.text
 
     ad_data.update(_scrape_about_nabolaget(finnkode))
+    ad_data.update(_find_travel_times(ad_data['Postadresse']))
 
     viewings = _scrape_viewings(html)
     if viewings:
