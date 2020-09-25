@@ -10,7 +10,7 @@ from urllib import parse
 from fake_useragent import UserAgent
 from requests_html import HTMLSession
 
-# Write inn your API key here
+# Add your API key here
 gmaps = googlemaps.Client(key=os.environ['GOOGLE_API_KEY'])
 
 session = HTMLSession()
@@ -31,11 +31,13 @@ def _find_travel_times(address):
     data = {}
     travel_times_transit = {}
     travel_times_driving = {}
-    destinations = ['Oslo Sentralstasjon', 'Accenture, Fornebu', 'Den Franske Skolen',
-                    'Rosenvilde VGS']
+    # destinations = ['Oslo Sentralstasjon', 'Accenture, Fornebu', 'Den Franske Skolen',
+    #                 'Rosenvilde VGS']
+    destinations = os.environ['DESTINATIONS']
 
     now = datetime.now()
-    latest_arrival_time = datetime.fromisoformat('2020-09-16 08:00+02:00')
+    # latest_arrival_time = datetime.fromisoformat('2020-09-16 08:00+02:00')
+    latest_arrival_time = datetime.fromisoformat(os.environ['LATEST_ARRIVAL_TIME'])
 
     try:
         for dest in destinations:
@@ -66,8 +68,9 @@ def _find_travel_times(address):
             data[dest]['Kollektivt'] = "{:.0f} min".format(directions_result_transit[0]['legs'][0]['duration']['value'] / 60)
             data[dest]['Bil'] = "{:.0f} min".format(directions_result_driving[0]['legs'][0]['duration']['value'] / 60)
 
-    except googlemaps.exceptions.ApiError:
+    except:
         print("Error in getting travel time")
+        return data
 
     data['Reisetider (kollektivt)'] = travel_times_transit
     print('Successfully added TRANSIT travel times for ' + address)
