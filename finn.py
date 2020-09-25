@@ -33,7 +33,7 @@ def _find_travel_times(address):
     travel_times_driving = {}
     # destinations = ['Oslo Sentralstasjon', 'Accenture, Fornebu', 'Den Franske Skolen',
     #                 'Rosenvilde VGS']
-    destinations = os.environ['DESTINATIONS']
+    destinations = [i for i in os.environ.get("DESTINATIONS").split("|")]
 
     now = datetime.now()
     # latest_arrival_time = datetime.fromisoformat('2020-09-16 08:00+02:00')
@@ -68,8 +68,9 @@ def _find_travel_times(address):
             data[dest]['Kollektivt'] = "{:.0f} min".format(directions_result_transit[0]['legs'][0]['duration']['value'] / 60)
             data[dest]['Bil'] = "{:.0f} min".format(directions_result_driving[0]['legs'][0]['duration']['value'] / 60)
 
-    except:
+    except Exception as e:
         print("Error in getting travel time")
+        print(e)
         return data
 
     data['Reisetider (kollektivt)'] = travel_times_transit
